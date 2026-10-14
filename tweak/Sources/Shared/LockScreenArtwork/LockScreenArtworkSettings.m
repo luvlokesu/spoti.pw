@@ -18,6 +18,7 @@ static NSArray<SGOrderItem *> *sources(void) {
     return @[
         SGOrderItemMake(SGArtworkSourceSpotify, @"Spotify Canvas", @"The track's own clip"),
         SGOrderItemMake(SGArtworkSourceApple, @"Apple Music", @"The album's animated cover"),
+        SGOrderItemMake(SGArtworkSourceGenerated, @"Generated", @"The still cover panned under a shifting gradient"),
     ];
 }
 
