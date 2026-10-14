@@ -7,10 +7,14 @@
 #define SGKeyLockScreenArtwork @"spotifyglass.lockscreen.animatedartwork"
 #define SGKeyLockScreenArtworkSources @"spotifyglass.lockscreen.artworksources"
 
-// Where a clip can come from: the track's Canvas, or the album's animated cover on Apple Music.
+// Where a clip can come from: the track's Canvas, the album's animated cover on Apple Music, or
+// one the mod builds from the still cover so the lock screen stays full-screen even when neither
+// has one.
 extern NSString *const SGArtworkSourceSpotify;
 extern NSString *const SGArtworkSourceApple;
-// The sources in the user's order, the ones switched off left out; Spotify, then Apple Music until set.
+extern NSString *const SGArtworkSourceGenerated;
+// The sources in the user's order, the ones switched off left out; Spotify, Apple Music, then
+// Generated until set.
 NSArray<NSString *> *SGArtworkOrder(void);
 void SGArtworkSetOrder(NSArray<NSString *> *order);
 
