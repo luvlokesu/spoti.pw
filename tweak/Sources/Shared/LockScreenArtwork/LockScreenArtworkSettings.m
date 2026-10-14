@@ -17,6 +17,7 @@ static NSArray<SGOrderItem *> *sources(void) {
     return @[
         SGOrderItemMake(SGArtworkSourceSpotify, @"Spotify Canvas", @"The track's own clip"),
         SGOrderItemMake(SGArtworkSourceApple, @"Apple Music", @"The album's animated cover"),
+        SGOrderItemMake(SGArtworkSourceGenerated, @"Generated", @"The still cover panned under a shifting gradient"),
     ];
 }
 
@@ -26,7 +27,7 @@ NSArray<SGModRow *> *SGAnimatedArtworkRows(void) {
     SGModRow *order = SGPageRow(@"Sources", ^UIViewController *{
         return SGOrderPage(@"Artwork sources", sources(), ^NSArray<NSString *> *{ return SGArtworkOrder(); },
                            ^(NSArray<NSString *> *keys) { SGArtworkSetOrder(keys); },
-                           @"Asked top to bottom until one has a clip. Apple Music gets only the artist and album name.");
+                           @"Asked top to bottom until one has a clip. Apple Music gets only the artist and album name. Generated is built on this phone from the still cover.");
     });
     order.value = ^NSString *{
         NSMutableArray<NSString *> *names = [NSMutableArray array];
