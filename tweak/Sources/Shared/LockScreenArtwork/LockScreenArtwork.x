@@ -6,6 +6,7 @@
 #import "SGAppleArtwork.h"
 #import "SGArtworkFile.h"
 #import "SGCanvas.h"
+#import "SGGeneratedArtwork.h"
 #import "Headers/SPTPlayer.h"
 #import "Shared/Lyrics/Lyrics.h"
 #import "Shared/Player/PlayerState.h"
@@ -158,18 +159,53 @@ void SGArtworkAsk(NSString *source, SPTPlayerTrack *track, SGCanvas *fromMetadat
     SGAppleArtworkFind(metadata[@"artist_name"] ?: track.artistName, metadata[@"album_title"], tall, done);
 }
 
+static void walk(NSString *uri, SPTPlayerTrack *track, SGCanvas *fromMetadata, NSArray<NSString *> *order, NSUInteger at);
+
+// The generated source: the still cover panned over a shifting gradient, built locally. No download,
+// no crop; the generator already writes at the aspect the system takes.
+static void playGenerated(NSString *uri, SPTPlayerTrack *track, SGCanvas *fromMetadata, NSArray<NSString *> *order, NSUInteger at) {
+    UIImage *still = coverImage(CGSizeMake(1080, 1080));
+    if (!still) {
+        SGLog(@"lock artwork: generated: no cover for %@, next source", uri);
+        walk(uri, track, fromMetadata, order, at + 1);
+        return;
+    }
+    SGLog(@"lock artwork: generated: building for %@", uri);
+    SGGeneratedArtworkMake(still, uri, sg_aspect, ^(NSURL *file, NSString *note) {
+        SGLog(@"lock artwork: generated %@: %@", uri, note);
+        if (![sg_wanted isEqualToString:uri]) return;
+        if (!file) {
+            walk(uri, track, fromMetadata, order, at + 1);
+            return;
+        }
+        id artwork = artworkFor([@"generated-" stringByAppendingString:uri], file, still);
+        @synchronized (sg_lock) {
+            sg_artwork = artwork;
+            sg_key = sg_offered;
+        }
+        sg_playing = SGArtworkSourceGenerated;
+        SGLog(@"lock artwork: generated %@ set under %@", uri, sg_offered);
+        resend();
+    });
+}
+
 static void walk(NSString *uri, SPTPlayerTrack *track, SGCanvas *fromMetadata, NSArray<NSString *> *order, NSUInteger at) {
     if (at >= order.count) {
         SGLog(@"lock artwork: no clip for %@ from %@", uri, order.count ? [order componentsJoinedByString:@", "] : @"no source");
         return;
     }
-    SGArtworkAsk(order[at], track, fromMetadata, sg_aspect < 0.9, ^(SGCanvas *canvas, NSString *note) {
+    NSString *source = order[at];
+    if ([source isEqualToString:SGArtworkSourceGenerated]) {
+        playGenerated(uri, track, fromMetadata, order, at);
+        return;
+    }
+    SGArtworkAsk(source, track, fromMetadata, sg_aspect < 0.9, ^(SGCanvas *canvas, NSString *note) {
         if (![sg_wanted isEqualToString:uri]) return;
         if (canvas.video) {
-            play(uri, canvas, order[at]);
+            play(uri, canvas, source);
             return;
         }
-        SGLog(@"lock artwork: %@ has no clip for %@ (%@)", order[at], uri, canvas ? @"a still canvas" : note);
+        SGLog(@"lock artwork: %@ has no clip for %@ (%@)", source, uri, canvas ? @"a still canvas" : note);
         walk(uri, track, fromMetadata, order, at + 1);
     });
 }
@@ -189,6 +225,7 @@ static void resolve(SPTPlayerTrack *track) {
         if (sg_wanted) {
             sg_wanted = nil;
             SGArtworkCancelFetch();
+            SGGeneratedArtworkCancel();
             sg_playing = nil;
             @synchronized (sg_lock) {
                 sg_artwork = nil;
@@ -214,6 +251,7 @@ static void resolve(SPTPlayerTrack *track) {
     sg_wanted = uri;
     sg_playing = nil;
     SGArtworkCancelFetch();
+    SGGeneratedArtworkCancel();
     @synchronized (sg_lock) {
         sg_artwork = nil;
         sg_key = nil;
