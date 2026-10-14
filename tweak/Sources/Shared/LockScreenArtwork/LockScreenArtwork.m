@@ -5,13 +5,15 @@
 
 NSString *const SGArtworkSourceSpotify = @"spotify";
 NSString *const SGArtworkSourceApple = @"applemusic";
+NSString *const SGArtworkSourceGenerated = @"generated";
 
 NSArray<NSString *> *SGArtworkOrderFor(NSString *key) {
     id stored = [NSUserDefaults.standardUserDefaults arrayForKey:key];
-    NSArray *keys = [stored isKindOfClass:NSArray.class] ? stored : @[SGArtworkSourceSpotify, SGArtworkSourceApple];
+    NSArray *keys = [stored isKindOfClass:NSArray.class] ? stored
+                                                         : @[SGArtworkSourceSpotify, SGArtworkSourceApple, SGArtworkSourceGenerated];
     NSMutableArray<NSString *> *order = [NSMutableArray array];
     for (id key in keys) {
-        BOOL known = [key isEqual:SGArtworkSourceSpotify] || [key isEqual:SGArtworkSourceApple];
+        BOOL known = [key isEqual:SGArtworkSourceSpotify] || [key isEqual:SGArtworkSourceApple] || [key isEqual:SGArtworkSourceGenerated];
         if (known && ![order containsObject:key]) [order addObject:key];
     }
     return order;
